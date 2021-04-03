@@ -1,0 +1,46 @@
+const db = require('quick.db')
+client.on("message", message =>{
+  if(message.content.startsWith(prefix + "credits")){
+ let user = message.mentions.users.first() || message.author;
+    let bal = db.fetch(`money_${user.id}`)
+    if (bal === null) bal = 0;
+      return message.channel.send(`:bank: | **${user.username} , your account balance is** \`\`$${bal}\`\`.`)
+}});
+const ms = require('parse-ms')
+client.on("message", async message => {
+if(message.content.startsWith(prefix + "daily")){
+    let timeout = 86400000/2 // 12 hours in milliseconds, change if you'd like.
+  let amount = Math.floor(Math.random() * 1000) + 1;
+    let daily = await db.fetch(`daily_${message.author.id}`);
+    if (daily !== null && timeout - (Date.now() - daily) > 0) {
+        let time = ms(timeout - (Date.now() - daily));
+        message.channel.send(`:rolling_eyes: **| ${message.author.username}, your daily credits refreshes in ${time.hours}h ${time.minutes}m ${time.seconds}s .** `)
+    } else {
+    message.channel.send(`:moneybag: **${message.author.username}, you got :dollar: ${amount} daily credits!**`)
+    db.add(`money_${message.author.id}`, amount)
+    db.set(`daily_${message.author.id}`, Date.now())
+    }}});
+client.on("message", async message =>{
+  if(message.content.startsWith(prefix + "trans")){
+    let args = message.content.split(" ").slice(2); 
+    let user = message.mentions.members.first() 
+    let member = db.fetch(`money_${message.author.id}`)
+    if (!user) {
+        return message.channel.send(`:rolling_eyes: | ** ${message.author.username}, I Cant Find a User**`)
+    }
+    if (!args) {
+        return message.channel.send(`:rolling_eyes: | **${message.author.username}, type the credit you need to transfer!**`)
+    }
+    if (message.content.includes('-')) { 
+      return message.channel.send(`:rolling_eyes: | **${message.author.username}, Type a Amount \`Not Negative\`**`)
+    }
+    if (member < args) {
+        return message.channel.send(`:thinking: ** | ${message.author.username}, Your balance is not enough for that!**`)
+    }
+    if(isNaN(args)) 
+return message.channel.send(`:rolling_eyes: Numbers Only`)
+    message.channel.send(`:moneybag: **| ${message.author.username}, has transferred \`$${args}\` to ${user}**`)
+    user.send(`:atm:  |  Transfer Receipt \n\`\`\`You have received $${args} from user ${message.author.username} (ID: ${user.id})\`\`\``)
+    db.add(`money_${user.id}`, args)
+    db.subtract(`money_${message.author.id}`, args)
+}});
